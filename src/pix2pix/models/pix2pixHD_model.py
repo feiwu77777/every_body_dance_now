@@ -164,7 +164,15 @@ class Pix2PixHDModel(BaseModel):
         else:
             return self.netD.forward(input_concat)
 
-    def forward(self, label, inst, image, feat, infer=False):
+    def discriminate_4(self, s0, s1, i0, i1, use_pool=False):
+        input_concat = torch.cat((s0, s1, i0.detach(), i1.detach()), dim=1)
+        if use_pool:            
+            fake_query = self.fake_pool.query(input_concat)
+            return self.netD.forward(fake_query)
+        else:
+            return self.netD.forward(input_concat)
+            
+    def forward(self,  label, next_label, image, next_image, face_coords, zeroshere, infer=False):
         # Encode Inputs
         input_label, real_image, next_label, next_image, zeroshere = self.encode_input(label, image, \
                      next_label=next_label, next_image=next_image, zeroshere=zeroshere)  
