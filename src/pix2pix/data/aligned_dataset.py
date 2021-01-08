@@ -76,7 +76,7 @@ class AlignedDataset(BaseDataset):
 
             paths = self.label_paths
             label_path = paths[index+1]              
-            label = Image.open(label_path).convert('RGB')        
+            label = Image.open(label_path).convert('RGB')     
             #params = get_params(self.opt, label.size)          
             transform_label = get_transform(self.opt, params, method=Image.NEAREST, normalize=False)
             next_label = transform_label(label) * 255

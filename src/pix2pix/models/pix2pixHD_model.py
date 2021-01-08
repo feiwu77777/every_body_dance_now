@@ -112,28 +112,31 @@ class Pix2PixHDModel(BaseModel):
             self.optimizer_D = torch.optim.Adam(params, lr=opt.lr, betas=(opt.beta1, 0.999))
 
     def encode_input(self, label_map, real_image=None, next_label=None, next_image=None, zeroshere=None, infer=False):          
-        if self.opt.label_nc == 0:
-            input_label = label_map.data.cuda()
-        else:
-            # create one-hot vector for label map 
-            size = label_map.size()
-            oneHot_size = (size[0], self.opt.label_nc, size[2], size[3])
-            zeros = torch.cuda.FloatTensor(torch.Size(oneHot_size)).zero_()
+        # if self.opt.label_nc == 0:
+        #     input_label = label_map.data.cuda()
+        # else:
+        #     # create one-hot vector for label map 
+        #     size = label_map.size()
+        #     oneHot_size = (size[0], self.opt.label_nc, size[2], size[3])
+        #     zeros = torch.cuda.FloatTensor(torch.Size(oneHot_size)).zero_()
 
-            input_label = zeros.scatter_(1, label_map.data.long().cuda(), 1.0)
-            if self.opt.data_type == 16:
-                input_label = input_label.half()
-            next_label = zeros.scatter_(1, next_label.data.long().cuda(), 1.0)
-            if self.opt.data_type == 16:
-                next_label = next_label.half()
+        #     input_label = zeros.scatter_(1, label_map.data.long().cuda(), 1.0)
+        #     if self.opt.data_type == 16:
+        #         input_label = input_label.half()
+        #     next_label = zeros.scatter_(1, next_label.data.long().cuda(), 1.0)
+        #     if self.opt.data_type == 16:
+        #         next_label = next_label.half()
 
         # get edges from instance map
         # if not self.opt.no_instance:
         #     inst_map = inst_map.data.cuda()
         #     edge_map = self.get_edges(inst_map)
-        #     input_label = torch.cat((input_label, edge_map), dim=1)         
+        #     input_label = torch.cat((input_label, edge_map), dim=1)
+        input_label = label_map.data.float().cuda()         
         input_label = Variable(input_label, volatile=infer)
-        next_label = Variable(next_label, volatile=infer)
+        if next_label is not None:
+            next_label = next_label.data.float().cuda()
+            next_label = Variable(next_label, volatile=infer)
 
         # real images for training
         if real_image is not None:
@@ -171,7 +174,7 @@ class Pix2PixHDModel(BaseModel):
             return self.netD.forward(fake_query)
         else:
             return self.netD.forward(input_concat)
-            
+
     def forward(self,  label, next_label, image, next_image, face_coords, zeroshere, infer=False):
         # Encode Inputs
         input_label, real_image, next_label, next_image, zeroshere = self.encode_input(label, image, \
