@@ -50,7 +50,7 @@ class AlignedDataset(BaseDataset):
                                         method=Image.NEAREST,
                                         normalize=False)
         label_tensor = transform_label(label)
-        label_tensor = torch.Tensor(np.array(label_tensor)).float()
+        label_tensor = torch.Tensor(np.array(label_tensor)[None]).float()
         original_label_path = label_path
 
         # image_tensor = inst_tensor = feat_tensor = 0
@@ -77,7 +77,7 @@ class AlignedDataset(BaseDataset):
                                             method=Image.NEAREST,
                                             normalize=False)
             next_label = transform_label(label)
-            next_label = torch.Tensor(np.array(next_label)).float()
+            next_label = torch.Tensor(np.array(next_label)[None]).float()
 
             if self.opt.isTrain:
                 image_path = self.image_paths[index + 1]
