@@ -2,6 +2,7 @@ import os.path
 from data.base_dataset import BaseDataset, get_params, get_transform, normalize
 from data.image_folder import make_dataset
 from PIL import Image
+import torch
 
 
 class AlignedDataset(BaseDataset):
@@ -26,7 +27,8 @@ class AlignedDataset(BaseDataset):
         ### load precomputed instance-wise encoded features
         if opt.load_features:
             self.dir_feat = os.path.join(opt.dataroot, opt.phase + "_feat")
-            print("----------- loading features from %s ----------" % self.dir_feat)
+            print("----------- loading features from %s ----------" %
+                  self.dir_feat)
             self.feat_paths = sorted(make_dataset(self.dir_feat))
 
         ### load face bounding box coordinates size 128x128
@@ -40,12 +42,14 @@ class AlignedDataset(BaseDataset):
     def __getitem__(self, index):
         ### input A (label maps)
         label_path = self.label_paths[index]
-        label = Image.open(label_path).convert("RGB")
+        label = Image.open(label_path)
         params = get_params(self.opt, label.size)
-        transform_label = get_transform(
-            self.opt, params, method=Image.NEAREST, normalize=False
-        )
-        label_tensor = transform_label(label).float()
+        transform_label = get_transform(self.opt,
+                                        params,
+                                        method=Image.NEAREST,
+                                        normalize=False)
+        label_tensor = transform_label(label)
+        label_tensor = torch.tensor(label_tensor).float()
         original_label_path = label_path
 
         # image_tensor = inst_tensor = feat_tensor = 0
@@ -56,42 +60,31 @@ class AlignedDataset(BaseDataset):
             image_path = self.image_paths[index]
             image = Image.open(image_path).convert("RGB")
             transform_image = get_transform(self.opt, params)
-            image_tensor = transform_image(image).float()
-
-        ### if using instance maps
-        # if not self.opt.no_instance:
-        #     inst_path = self.inst_paths[index]
-        #     inst = Image.open(inst_path)
-        #     inst_tensor = transform_A(inst)
-
-        #     if self.opt.load_features:
-        #         feat_path = self.feat_paths[index]
-        #         feat = Image.open(feat_path).convert('RGB')
-        #         norm = normalize()
-        #         feat_tensor = norm(transform_A(feat))
+            image_tensor = transform_image(image)
+            image_tensor = torch.tensor(image_tensor).float()
 
         is_next = index < len(self) - 1
         # if self.opt.gestures:
         #     is_next = is_next and (index % 64 != 63)
-
         """ Load the next label, image pair """
         if is_next:
 
             paths = self.label_paths
             label_path = paths[index + 1]
-            label = Image.open(label_path).convert("RGB")
-            # params = get_params(self.opt, label.size)
-            transform_label = get_transform(
-                self.opt, params, method=Image.NEAREST, normalize=False
-            )
-            next_label = transform_label(label).float()
+            label = Image.open(label_path)
+            transform_label = get_transform(self.opt,
+                                            params,
+                                            method=Image.NEAREST,
+                                            normalize=False)
+            next_label = transform_label(label)
+            next_label = torch.tensor(next_label).float()
 
             if self.opt.isTrain:
                 image_path = self.image_paths[index + 1]
                 image = Image.open(image_path).convert("RGB")
                 transform_image = get_transform(self.opt, params)
-                next_image = transform_image(image).float()
-
+                next_image = transform_image(image)
+                next_label = torch.tensor(next_label).float()
         """ If using the face generator and/or face discriminator """
         # if self.opt.face_discrim or self.opt.face_generator:
         #     facetxt_path = self.facetext_paths[index]
@@ -106,8 +99,6 @@ class AlignedDataset(BaseDataset):
             "next_label": next_label,
             "next_image": next_image,
         }
-        # input_dict = {'label': label_tensor, 'inst': inst_tensor, 'image': image_tensor,
-        #               'feat': feat_tensor, 'path': label_path}
 
         return input_dict
 
