@@ -41,8 +41,7 @@ class Pix2PixHDModel(BaseModel):
         netG_input_nc = input_nc
         if not opt.no_instance:
             netG_input_nc += 1
-        if self.use_features:
-            netG_input_nc += opt.feat_num
+
         self.netG = networks.define_G(
             netG_input_nc,
             opt.output_nc,
@@ -74,16 +73,16 @@ class Pix2PixHDModel(BaseModel):
             )
 
         ### Encoder network
-        if self.gen_features:
-            self.netE = networks.define_G(
-                opt.output_nc,
-                opt.feat_num,
-                opt.nef,
-                "encoder",
-                opt.n_downsample_E,
-                norm=opt.norm,
-                gpu_ids=self.gpu_ids,
-            )
+        # if self.gen_features:
+        #     self.netE = networks.define_G(
+        #         opt.output_nc,
+        #         opt.feat_num,
+        #         opt.nef,
+        #         "encoder",
+        #         opt.n_downsample_E,
+        #         norm=opt.norm,
+        #         gpu_ids=self.gpu_ids,
+        #     )
         if self.opt.verbose:
             print("---------- Networks initialized -------------")
 
@@ -93,8 +92,8 @@ class Pix2PixHDModel(BaseModel):
             self.load_network(self.netG, "G", opt.which_epoch, pretrained_path)
             if self.isTrain:
                 self.load_network(self.netD, "D", opt.which_epoch, pretrained_path)
-            if self.gen_features:
-                self.load_network(self.netE, "E", opt.which_epoch, pretrained_path)
+            # if self.gen_features:
+            #     self.load_network(self.netE, "E", opt.which_epoch, pretrained_path)
 
         # set loss functions and optimizers
         if self.isTrain:
@@ -145,8 +144,8 @@ class Pix2PixHDModel(BaseModel):
                 print("The layers that are finetuned are ", sorted(finetune_list))
             else:
                 params = list(self.netG.parameters())
-            if self.gen_features:
-                params += list(self.netE.parameters())
+            # if self.gen_features:
+            #     params += list(self.netE.parameters())
             self.optimizer_G = torch.optim.Adam(
                 params, lr=opt.lr, betas=(opt.beta1, 0.999)
             )
@@ -188,10 +187,13 @@ class Pix2PixHDModel(BaseModel):
         #     input_label = torch.cat((input_label, edge_map), dim=1)
         input_label = label_map.data.float().cuda()
         input_label = Variable(input_label, volatile=infer)
+        if self.opt.data_type == 16:
+            input_label = input_label.half()
         if next_label is not None:
             next_label = next_label.data.float().cuda()
             next_label = Variable(next_label, volatile=infer)
-
+            if self.opt.data_type == 16:
+                next_label = next_label.half()
         # real images for training
         if real_image is not None:
             real_image = Variable(real_image.data.cuda())
@@ -203,13 +205,8 @@ class Pix2PixHDModel(BaseModel):
         if zeroshere is not None:
             zeroshere = zeroshere.data.float().cuda()
             zeroshere = Variable(zeroshere, volatile=infer)
-        # instance map for feature encoding
-        # if self.use_features:
-        #     # get precomputed feature maps
-        #     if self.opt.load_features:
-        #         feat_map = Variable(feat_map.data.cuda())
-        #     if self.opt.label_feat:
-        #         inst_map = label_map.cuda()
+            if self.opt.data_type == 16:
+                zeroshere = zeroshere.half()
 
         return input_label, real_image, next_label, next_image, zeroshere
 
@@ -242,20 +239,13 @@ class Pix2PixHDModel(BaseModel):
         )
 
         initial_I_0 = 0
-        # Fake Generation
-        # if self.use_features:
-        #     if not self.opt.load_features:
-        #         feat_map = self.netE.forward(real_image, inst_map)
-        #     input_concat = torch.cat((input_label, feat_map), dim=1)
-        # else:
-        #     input_concat = input_label
-        # fake_image = self.netG.forward(input_concat)
 
         # Fake Generation I_0
         input_concat = torch.cat((input_label, zeroshere), dim=1)
         I_0 = self.netG.forward(input_concat)
-        input_concat1 = torch.cat((next_label, I_0), dim=1)
-        I_1 = self.netG.forward(input_concat1)
+        # Fake Generation I_1
+        input_concat = torch.cat((next_label, I_0), dim=1)
+        I_1 = self.netG.forward(input_concat)
 
         loss_D_fake_face = loss_D_real_face = loss_G_GAN_face = 0
         fake_face_0 = fake_face_1 = real_face_0 = real_face_1 = 0
@@ -301,20 +291,20 @@ class Pix2PixHDModel(BaseModel):
                 self.opt.netG == "global"
             ):  # need 2x VGG for artifacts when training local
                 loss_G_VGG *= 0.5
-            if self.opt.face_discrim:
-                loss_G_VGG += (
-                    0.5
-                    * self.criterionVGG(fake_face_0, real_face_0)
-                    * self.opt.lambda_feat
-                )
-                loss_G_VGG += (
-                    0.5
-                    * self.criterionVGG(fake_face_1, real_face_1)
-                    * self.opt.lambda_feat
-                )
+            # if self.opt.face_discrim:
+            #     loss_G_VGG += (
+            #         0.5
+            #         * self.criterionVGG(fake_face_0, real_face_0)
+            #         * self.opt.lambda_feat
+            #     )
+            #     loss_G_VGG += (
+            #         0.5
+            #         * self.criterionVGG(fake_face_1, real_face_1)
+            #         * self.opt.lambda_feat
+            #     )
 
-        if self.opt.use_l1:
-            loss_G_VGG += (self.criterionL1(I_1, next_image)) * self.opt.lambda_A
+        # if self.opt.use_l1:
+        #     loss_G_VGG += (self.criterionL1(I_1, next_image)) * self.opt.lambda_A
 
         # Only return the fake_B image if necessary to save BW
         return [
