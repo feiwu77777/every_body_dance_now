@@ -386,14 +386,14 @@ class Pix2PixHDModel(BaseModel):
     def save(self, which_epoch):
         self.save_network(self.netG, "G", which_epoch, self.gpu_ids)
         self.save_network(self.netD, "D", which_epoch, self.gpu_ids)
-        if self.gen_features:
-            self.save_network(self.netE, "E", which_epoch, self.gpu_ids)
+        # if self.gen_features:
+        #     self.save_network(self.netE, "E", which_epoch, self.gpu_ids)
 
     def update_fixed_params(self):
         # after fixing the global generator for a number of iterations, also start finetuning it
         params = list(self.netG.parameters())
-        if self.gen_features:
-            params += list(self.netE.parameters())
+        # if self.gen_features:
+        #     params += list(self.netE.parameters())
         self.optimizer_G = torch.optim.Adam(params,
                                             lr=self.opt.lr,
                                             betas=(self.opt.beta1, 0.999))
