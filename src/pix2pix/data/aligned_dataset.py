@@ -61,8 +61,7 @@ class AlignedDataset(BaseDataset):
             image_path = self.image_paths[index]
             image = Image.open(image_path).convert("RGB")
             transform_image = get_transform(self.opt, params)
-            image_tensor = transform_image(image)
-            image_tensor = torch.Tensor(np.array(image_tensor)).float()
+            image_tensor = transform_image(image).float()
 
         is_next = index < len(self) - 1
         # if self.opt.gestures:
@@ -84,8 +83,7 @@ class AlignedDataset(BaseDataset):
                 image_path = self.image_paths[index + 1]
                 image = Image.open(image_path).convert("RGB")
                 transform_image = get_transform(self.opt, params)
-                next_image = transform_image(image)
-                next_image = torch.Tensor(np.array(next_image)).float()
+                next_image = transform_image(image).float()
         """ If using the face generator and/or face discriminator """
         # if self.opt.face_discrim or self.opt.face_generator:
         #     facetxt_path = self.facetext_paths[index]
