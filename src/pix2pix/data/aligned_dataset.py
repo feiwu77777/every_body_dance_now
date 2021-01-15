@@ -43,7 +43,7 @@ class AlignedDataset(BaseDataset):
     def __getitem__(self, index):
         ### input A (label maps)
         label_path = self.label_paths[index]
-        label = Image.open(label_path)
+        label = Image.open(label_path).convert('RGB')
         params = get_params(self.opt, label.size)
         transform_label = get_transform(self.opt,
                                         params,

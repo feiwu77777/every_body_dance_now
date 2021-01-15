@@ -32,11 +32,10 @@ class Pix2PixHDModel(BaseModel):
                 not opt.isTrain):  # when training at full res this causes OOM
             torch.backends.cudnn.benchmark = True
         self.isTrain = opt.isTrain
-        input_nc = opt.label_nc if opt.label_nc != 0 else opt.input_nc
 
         ##### define networks
         # Generator network
-        netG_input_nc = input_nc
+        netG_input_nc = opt.label_nc + opt.image_nc
         if not opt.no_instance:
             netG_input_nc += 1
 
@@ -56,7 +55,7 @@ class Pix2PixHDModel(BaseModel):
         # Discriminator network
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            netD_input_nc = 4 * opt.output_nc
+            netD_input_nc = 2 * (opt.label_nc + opt.image_nc)
             if not opt.no_instance:
                 netD_input_nc += 1
             self.netD = networks.define_D(
