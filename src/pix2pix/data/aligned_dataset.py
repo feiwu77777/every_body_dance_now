@@ -49,7 +49,7 @@ class AlignedDataset(BaseDataset):
                                         method=Image.NEAREST,
                                         normalize=False)
         label_tensor = transform_label(label)
-        label_tensor = torch.tensor(label_tensor).float()
+        label_tensor = torch.Tensor(label_tensor).float()
         original_label_path = label_path
 
         # image_tensor = inst_tensor = feat_tensor = 0
@@ -61,7 +61,7 @@ class AlignedDataset(BaseDataset):
             image = Image.open(image_path).convert("RGB")
             transform_image = get_transform(self.opt, params)
             image_tensor = transform_image(image)
-            image_tensor = torch.tensor(image_tensor).float()
+            image_tensor = torch.Tensor(image_tensor).float()
 
         is_next = index < len(self) - 1
         # if self.opt.gestures:
@@ -77,14 +77,14 @@ class AlignedDataset(BaseDataset):
                                             method=Image.NEAREST,
                                             normalize=False)
             next_label = transform_label(label)
-            next_label = torch.tensor(next_label).float()
+            next_label = torch.Tensor(next_label).float()
 
             if self.opt.isTrain:
                 image_path = self.image_paths[index + 1]
                 image = Image.open(image_path).convert("RGB")
                 transform_image = get_transform(self.opt, params)
                 next_image = transform_image(image)
-                next_label = torch.tensor(next_label).float()
+                next_label = torch.Tensor(next_label).float()
         """ If using the face generator and/or face discriminator """
         # if self.opt.face_discrim or self.opt.face_generator:
         #     facetxt_path = self.facetext_paths[index]
