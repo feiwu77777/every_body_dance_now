@@ -84,6 +84,8 @@ class AlignedDataset(BaseDataset):
                 image = Image.open(image_path).convert("RGB")
                 transform_image = get_transform(self.opt, params)
                 next_image = transform_image(image).float()
+        else:
+            next_label, next_image = label_tensor, image_tensor
         """ If using the face generator and/or face discriminator """
         # if self.opt.face_discrim or self.opt.face_generator:
         #     facetxt_path = self.facetext_paths[index]
