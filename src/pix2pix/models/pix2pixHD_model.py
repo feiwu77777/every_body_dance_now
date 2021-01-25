@@ -154,12 +154,9 @@ class Pix2PixHDModel(BaseModel):
     ):
 
         input_label = label_map.float().cuda()
-        if self.opt.data_type == 16:
-            input_label = input_label.half()
+
         if next_label is not None:
             next_label = next_label.float().cuda()
-            if self.opt.data_type == 16:
-                next_label = next_label.half()
         # real images for training
         if real_image is not None:
             real_image = real_image.cuda()
@@ -170,8 +167,13 @@ class Pix2PixHDModel(BaseModel):
 
         if zeroshere is not None:
             zeroshere = zeroshere.float().cuda()
-            if self.opt.data_type == 16:
-                zeroshere = zeroshere.half()
+
+        if self.opt.fp16:
+            input_label = input_label.half()
+            real_image = real_image.half()
+            next_label = next_label.half()
+            next_image = next_image.half()
+            zeroshere = zeroshere.half()
 
         return input_label, real_image, next_label, next_image, zeroshere
 

@@ -64,8 +64,6 @@ class AlignedDataset(BaseDataset):
             image_tensor = transform_image(image).float()
 
         is_next = index < len(self) - 1
-        # if self.opt.gestures:
-        #     is_next = is_next and (index % 64 != 63)
         """ Load the next label, image pair """
         if is_next:
 
