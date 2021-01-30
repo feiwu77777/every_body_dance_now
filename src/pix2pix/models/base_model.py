@@ -13,7 +13,7 @@ class BaseModel(torch.nn.Module):
         self.isTrain = opt.isTrain
         self.Tensor = torch.cuda.FloatTensor if self.gpu_ids else torch.Tensor
         self.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
-        self.google_drive = opt.google_drive
+        self.save_weights = opt.save_weights
 
     def set_input(self, input):
         self.input = input
@@ -44,7 +44,7 @@ class BaseModel(torch.nn.Module):
     def save_network(self, network, network_label, epoch_label, gpu_ids):
         save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
         if epoch_label == 'latest':
-            save_path = os.path.join(self.google_drive, save_filename)
+            save_path = os.path.join(self.save_weights, save_filename)
         else:
             save_path = os.path.join(self.save_dir, save_filename)
         torch.save(network.cpu().state_dict(), save_path)
