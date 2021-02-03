@@ -20,18 +20,6 @@ class AlignedDataset(BaseDataset):
             self.dir_image = os.path.join(opt.dataroot, opt.phase + "_img")
             self.image_paths = sorted(make_dataset(self.dir_image))
 
-        ### instance maps
-        if not opt.no_instance:
-            self.dir_inst = os.path.join(opt.dataroot, opt.phase + "_inst")
-            self.inst_paths = sorted(make_dataset(self.dir_inst))
-
-        ### load precomputed instance-wise encoded features
-        if opt.load_features:
-            self.dir_feat = os.path.join(opt.dataroot, opt.phase + "_feat")
-            print("----------- loading features from %s ----------" %
-                  self.dir_feat)
-            self.feat_paths = sorted(make_dataset(self.dir_feat))
-
         ### load face bounding box coordinates size 128x128
         # if opt.face_discrim or opt.face_generator:
         #     self.dir_facetext = os.path.join(opt.dataroot, opt.phase + '_facetexts128')
@@ -57,7 +45,7 @@ class AlignedDataset(BaseDataset):
         image_tensor = next_label = next_image = face_tensor = 0
 
         ### input B (real images)
-        if self.opt.isTrain or self.opt.use_encoded_image:
+        if self.opt.isTrain:
             image_path = self.image_paths[index]
             image = Image.open(image_path).convert("RGB")
             transform_image = get_transform(self.opt, params)
@@ -65,7 +53,7 @@ class AlignedDataset(BaseDataset):
 
         is_next = index < len(self) - 1
         """ Load the next label, image pair """
-        if is_next:
+        if is_next and self.opt.isTrain:
 
             paths = self.label_paths
             label_path = paths[index + 1]

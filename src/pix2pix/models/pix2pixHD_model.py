@@ -168,13 +168,6 @@ class Pix2PixHDModel(BaseModel):
         if zeroshere is not None:
             zeroshere = zeroshere.float().cuda()
 
-        if self.opt.fp16:
-            input_label = input_label.half()
-            real_image = real_image.half()
-            next_label = next_label.half()
-            next_image = next_image.half()
-            zeroshere = zeroshere.half()
-
         return input_label, real_image, next_label, next_image, zeroshere
 
     def discriminate(self, input_label, test_image, use_pool=False):
@@ -297,30 +290,38 @@ class Pix2PixHDModel(BaseModel):
             ],
         ]
 
-    def inference(self, label, inst, image=None):
+    def inference(self, label, prevouts, face_coords):
+
         # Encode Inputs
-        image = Variable(image) if image is not None else None
-        input_label, inst_map, real_image, _ = self.encode_input(
-            Variable(label), Variable(inst), image, infer=True)
+        input_label, _, _, _, prevouts = self.encode_input(label,
+                                                           zeroshere=prevouts,
+                                                           infer=True)
 
+        if self.opt.face_generator:
+            miny = face_coords[0][0]
+            maxy = face_coords[0][1]
+            minx = face_coords[0][2]
+            maxx = face_coords[0][3]
+        """ new face """
+        I_0 = 0
         # Fake Generation
-        if self.use_features:
-            if self.opt.use_encoded_image:
-                # encode the real image to get feature map
-                feat_map = self.netE.forward(real_image, inst_map)
-            else:
-                # sample clusters from precomputed features
-                feat_map = self.sample_features(inst_map)
-            input_concat = torch.cat((input_label, feat_map), dim=1)
-        else:
-            input_concat = input_label
 
-        if torch.__version__.startswith("0.4"):
-            with torch.no_grad():
-                fake_image = self.netG.forward(input_concat)
-        else:
-            fake_image = self.netG.forward(input_concat)
-        return fake_image
+        input_concat = torch.cat((input_label, prevouts), dim=1)
+        initial_I_0 = self.netG.forward(input_concat)
+
+        # if self.opt.face_generator:
+        #     face_label_0 = input_label[:, :, miny:maxy, minx:maxx]
+        #     face_residual_0 = self.faceGen.forward(
+        #         torch.cat(
+        #             (face_label_0, initial_I_0[:, :, miny:maxy, minx:maxx]),
+        #             dim=1))
+        #     I_0 = initial_I_0.clone()
+        #     I_0[:, :, miny:maxy,
+        #         minx:maxx] = initial_I_0[:, :, miny:maxy,
+        #                                  minx:maxx] + face_residual_0
+        #     fake_face_0 = I_0[:, :, miny:maxy, minx:maxx]
+        #     return I_0
+        return initial_I_0
 
     def sample_features(self, inst):
         # read precomputed feature clusters
